@@ -246,3 +246,39 @@ def plot_experiment_results(results_path: str, output_dir: str = "figures/"):
         fig.savefig(out / f"{experiment}_context.png")
 
     print(f"Plots saved to {out}/")
+  def generate_all_figures(output_dir="figures/"):
+    from pathlib import Path
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    print("Generating Figure 1A: Performance curves...")
+    plot_performance_curves(
+        configs=[
+            ("GPT-4o-mini (a=0.72, c=0.082)", 0.72, 0.082),
+            ("MATH debate (a=0.69, c=0.155)", 0.69, 0.155),
+            ("Self-consistency (a=0.56, c=0.041)", 0.56, 0.041),
+        ],
+        output=str(out / "fig1a_performance_curves.png"),
+    )
+    print("Generating Figure 2A: Scaffold overhead...")
+    plot_scaffold_overhead(output=str(out / "fig2a_scaffold_overhead.png"))
+
+    print("Generating Figure 2B: CBI diagnostic...")
+    plot_cbi_diagnostic(
+        deployments=[
+            ("AutoGen GroupChat", 3, 9),
+            ("LangChain 5-agent", 5, 9),
+            ("Society of Mind", 5, 18),
+            ("AgentPrune (pre)", 20, 8),
+            ("AgentPrune (post)", 8, 8),
+            ("Self-consistency k=40", 40, 14),
+        ],
+        output=str(out / "fig2b_cbi_diagnostic.png"),
+    )
+    print("Generating Figure 3A: P(harm) validation...")
+    plot_pharm_validation(
+        mu_a=0.19, sigma_a=0.07, mu_c=0.18,
+        mc_runs=50_000,
+        output=str(out / "fig3a_pharm_validation.png"),
+    )
+    print(f"All figures saved to {output_dir}")
