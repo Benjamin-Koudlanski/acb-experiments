@@ -52,8 +52,7 @@ def download_humaneval():
     jsonl_path = DATA_DIR / "HumanEval.jsonl"
 
     if jsonl_path.exists():
-        with open(jsonl_path) as f:
-            n_tasks = sum(1 for _ in f)
+        n_tasks = sum(1 for _ in open(jsonl_path))
         print(f"✓ HumanEval already present: {jsonl_path} ({n_tasks} tasks)")
         return
 
@@ -66,8 +65,7 @@ def download_humaneval():
         fout.write(fin.read())
     gz_path.unlink(missing_ok=True)
 
-    with open(jsonl_path) as f:
-        n_tasks = sum(1 for _ in f)
+    n_tasks = sum(1 for _ in open(jsonl_path))
     print(f"✓ HumanEval ready: {jsonl_path} ({n_tasks} tasks)")
 
 
@@ -286,8 +284,7 @@ def verify():
     # HumanEval
     he_path = DATA_DIR / "HumanEval.jsonl"
     if he_path.exists():
-        with open(he_path) as f:
-            n = sum(1 for _ in f)
+        n = sum(1 for _ in open(he_path))
         print(f"  ✓ HumanEval: {n} tasks")
     else:
         print(f"  ✗ HumanEval: NOT FOUND at {he_path}")
