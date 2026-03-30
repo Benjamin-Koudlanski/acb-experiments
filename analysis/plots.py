@@ -191,7 +191,6 @@ def plot_experiment_results(results_path: str, output_dir: str = "figures/"):
     summary = data.get("summary", {})
 
     if "pass_at_1" in summary:
-        # P1-style: plot accuracy vs fleet size
         fig, ax = plt.subplots(figsize=(7, 4.5))
         pass_at_1 = summary["pass_at_1"]
         ns = sorted(int(k) for k in pass_at_1.keys())
@@ -214,7 +213,6 @@ def plot_experiment_results(results_path: str, output_dir: str = "figures/"):
         fig.savefig(out / f"{experiment}_accuracy.png")
 
     if "all_to_all" in summary and "supervisor" in summary:
-        # P2-style: compare topologies
         fig, ax = plt.subplots(figsize=(7, 4.5))
         a2a = summary["all_to_all"]
         sup = summary["supervisor"]
@@ -230,7 +228,6 @@ def plot_experiment_results(results_path: str, output_dir: str = "figures/"):
         fig.savefig(out / f"{experiment}_topology.png")
 
     if "shared" in summary and "isolated" in summary:
-        # P3-style: compare context modes
         fig, ax = plt.subplots(figsize=(7, 4.5))
         shared = summary["shared"]
         isolated = summary["isolated"]
@@ -246,8 +243,10 @@ def plot_experiment_results(results_path: str, output_dir: str = "figures/"):
         fig.savefig(out / f"{experiment}_context.png")
 
     print(f"Plots saved to {out}/")
-  def generate_all_figures(output_dir="figures/"):
-    from pathlib import Path
+
+
+def generate_all_figures(output_dir="figures/"):
+    """Generate all paper figures (no experiment data needed)."""
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
