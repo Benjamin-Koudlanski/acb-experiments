@@ -1,0 +1,9 @@
+# P2: Supervisor vs all-to-all topology crossover on MATH
+experiment_name: p2_topology_crossover
+fleet_sizes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15]
+n_reps: 50
+max_tasks: 200
+max_rounds: 3
+seed: 42
+output_dir: results/p2/
+temperature: 0.0

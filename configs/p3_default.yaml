@@ -1,0 +1,9 @@
+# P3: Shared vs isolated RAG context diversity
+experiment_name: p3_rag_diversity
+fleet_sizes: [1, 3, 6, 9]
+n_reps: 50
+max_tasks: 200
+max_rounds: 1
+seed: 42
+output_dir: results/p3/
+temperature: 0.0

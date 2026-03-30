@@ -1,0 +1,10 @@
+# Full replication: runs P1, P2, P3 in sequence
+# Total estimated cost: ~$380 with OpenAI, $0 with local models
+experiment_name: full_replication
+fleet_sizes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15]
+n_reps: 50
+max_tasks: null
+max_rounds: 3
+seed: 42
+output_dir: results/full/
+temperature: 0.0

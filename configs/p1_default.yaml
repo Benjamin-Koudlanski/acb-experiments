@@ -1,0 +1,9 @@
+# P1: All-to-all fleet sizing on HumanEval
+experiment_name: p1_fleet_sizing
+fleet_sizes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15]
+n_reps: 50
+max_tasks: null  # null = all 164 HumanEval tasks
+max_rounds: 3
+seed: 42
+output_dir: results/p1/
+temperature: 0.0
