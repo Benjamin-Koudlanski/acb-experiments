@@ -13,6 +13,7 @@ Datasets are saved to benchmarks/data/.
 
 from __future__ import annotations
 
+import importlib.util
 import argparse
 import gzip
 import json
