@@ -108,15 +108,18 @@ async def run_all(config: ExperimentConfig, skip_mc: bool = False):
     logger.info("=" * 60)
 
     # ── Summary ──
-    print("\n" + "=" * 60)
-    print("REPLICATION SUMMARY")
-    print("=" * 60)
-    print(f"P1 — n* predicted: {p1_result.summary.get('n_star', '?')}, "
-          f"empirical peak: {p1_result.summary.get('empirical_peak', '?')}, "
-          f"match: {p1_result.summary.get('n_star_matches', '?')}")
-    print(f"P2 — P2 falsified: {p2_result.summary.get('p2_falsified', '?')}")
-    print(f"P3 — P3 falsified: {p3_result.summary.get('p3_falsified', '?')}")
-    print(f"Total time: {elapsed/60:.1f} minutes")
+    logger.info("")
+    logger.info("=" * 60)
+    logger.info("REPLICATION SUMMARY")
+    logger.info("=" * 60)
+    logger.info(
+        f"P1 — n* predicted: {p1_result.summary.get('n_star', '?')}, "
+        f"empirical peak: {p1_result.summary.get('empirical_peak', '?')}, "
+        f"match: {p1_result.summary.get('n_star_matches', '?')}"
+    )
+    logger.info(f"P2 — P2 falsified: {p2_result.summary.get('p2_falsified', '?')}")
+    logger.info(f"P3 — P3 falsified: {p3_result.summary.get('p3_falsified', '?')}")
+    logger.info(f"Total time: {elapsed/60:.1f} minutes")
 
 
 def main():

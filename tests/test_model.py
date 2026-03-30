@@ -49,9 +49,9 @@ class TestMarginalGain:
 
     def test_zero_at_nstar(self):
         a, c = 0.72, 0.08
-        # At n = a/c, marginal gain should be ~0
-        n_exact = a / c
-        assert abs(marginal_gain(int(n_exact), a, c)) < c
+        # At n = n* = ⌈a/c⌉, marginal gain should be ~0
+        n_star = optimal_fleet_size(a, c)
+        assert abs(marginal_gain(n_star, a, c)) < c
 
     def test_negative_beyond_nstar(self):
         a, c = 0.72, 0.08

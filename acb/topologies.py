@@ -195,18 +195,27 @@ class Supervisor(Topology):
 
 
 def _majority_vote(answers: list[str]) -> str:
-    """Simple majority vote — returns the most common answer.
+    """Deterministic majority vote — returns the most common answer.
 
-    Falls back to the first answer if no majority.
+    Tie-breaking: when multiple answers share the highest count,
+    the lexicographically smallest (normalized) answer wins.  This
+    guarantees reproducible results across runs and Python versions.
+
+    Falls back to the first answer if the list is empty.
     """
+    if not answers:
+        return ""
+
     from collections import Counter
 
     # Normalize: strip, lowercase for comparison
     normalized = [a.strip().lower() for a in answers]
     counts = Counter(normalized)
-    most_common = counts.most_common(1)[0][0]
 
-    # Return the original-cased version
+    # Deterministic tie-breaking: highest count, then lexicographic order
+    most_common = sorted(counts.items(), key=lambda x: (-x[1], x[0]))[0][0]
+
+    # Return the original-cased version (first occurrence)
     for a in answers:
         if a.strip().lower() == most_common:
             return a

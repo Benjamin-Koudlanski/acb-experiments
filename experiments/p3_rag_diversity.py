@@ -77,7 +77,12 @@ async def run_fleet_on_task(problem, passages, agents, llm_fn, mode):
         resp, tok = await llm_fn(prompt, agent_id=aid)
         answers.append(extract_model_answer(resp))
         total_tokens += tok
-    vote = Counter(answers).most_common(1)[0][0] if answers else ""
+    # Deterministic tie-breaking: highest count, then lexicographic order
+    if answers:
+        counts = Counter(answers)
+        vote = sorted(counts.items(), key=lambda x: (-x[1], x[0]))[0][0]
+    else:
+        vote = ""
     return vote, total_tokens
 
 
@@ -140,7 +145,13 @@ async def run_p3(config: ExperimentConfig) -> ExperimentResult:
     summary["shared_improvement"] = summary["shared_n6"] - baseline
     summary["isolated_improvement"] = summary["isolated_n6"] - baseline
     summary["p3_falsified"] = summary["shared_improvement"] > 0.05
-    summary["rho_crit_estimate"] = rho_crit(c=0.06, sigma_sq=0.15)
+    # ρ_crit parameters: c estimated from token overhead, sigma_sq from
+    # empirical pass-rate variance.  Fall back to calibration defaults
+    # (c=0.06, σ²=0.15) when experimental estimates are unavailable.
+    estimated_c = summary.get("c_overhead", 0.06) or 0.06
+    estimated_sigma_sq = 0.15  # TODO: derive from per-task variance when data permits
+    summary["rho_crit_params"] = {"c": estimated_c, "sigma_sq": estimated_sigma_sq}
+    summary["rho_crit_estimate"] = rho_crit(c=estimated_c, sigma_sq=estimated_sigma_sq)
     summary["llm_usage"] = llm.usage_summary()
 
     result.summary = summary

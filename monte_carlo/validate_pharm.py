@@ -12,12 +12,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import time
 from pathlib import Path
 
 import numpy as np
 
 from acb.model import p_harm, p_harm_monte_carlo
+
+logger = logging.getLogger("acb.monte_carlo")
 
 # Default parameters calibrated to reproduce paper Table 3 (Section 3.2).
 # These represent a scenario with moderate accuracy and non-trivial overhead.
@@ -50,13 +53,13 @@ def run_validation(
     results = []
     max_error = 0.0
 
-    print("=" * 72)
-    print("P(harm|n) Validation: Closed-Form vs. Monte Carlo")
-    print(f"Parameters: mu_a={mu_a}, sigma_a={sigma_a}, mu_c={mu_c}")
-    print(f"Monte Carlo runs: {mc_runs:,}, seed: {seed}")
-    print("=" * 72)
-    print(f"{'Fleet n':>8} {'Formula':>12} {'MC (50K)':>12} {'Abs Error':>12} {'Status':>10}")
-    print("-" * 72)
+    logger.info("=" * 72)
+    logger.info("P(harm|n) Validation: Closed-Form vs. Monte Carlo")
+    logger.info(f"Parameters: mu_a={mu_a}, sigma_a={sigma_a}, mu_c={mu_c}")
+    logger.info(f"Monte Carlo runs: {mc_runs:,}, seed: {seed}")
+    logger.info("=" * 72)
+    logger.info(f"{'Fleet n':>8} {'Formula':>12} {'MC (50K)':>12} {'Abs Error':>12} {'Status':>10}")
+    logger.info("-" * 72)
 
     for n in fleet_sizes:
         # Closed-form
@@ -85,26 +88,25 @@ def run_validation(
         results.append(row)
 
         marker = " <-- 50% threshold" if n == 2 else ""
-        print(
+        logger.info(
             f"{n:>8} {p_formula:>12.4f} {p_mc:>12.4f} {error:>12.4f} "
             f"{status:>10}{marker}"
         )
 
-    print("-" * 72)
-    print(f"Maximum absolute error: {max_error:.4f}")
+    logger.info("-" * 72)
+    logger.info(f"Maximum absolute error: {max_error:.4f}")
     all_pass = all(r["status"] == "PASS" for r in results)
-    print(f"Overall: {'ALL PASS' if all_pass else 'SOME FAILURES'}")
-    print()
+    logger.info(f"Overall: {'ALL PASS' if all_pass else 'SOME FAILURES'}")
 
     # Additional insight: find the 50% crossing point
-    print("Key thresholds:")
+    logger.info("Key thresholds:")
     for r in results:
         if r["p_formula"] >= 0.5:
-            print(f"  P(harm) crosses 50% at n={r['n']} (P={r['p_formula']:.4f})")
+            logger.info(f"  P(harm) crosses 50% at n={r['n']} (P={r['p_formula']:.4f})")
             break
     for r in results:
         if r["p_formula"] >= 0.9:
-            print(f"  P(harm) crosses 90% at n={r['n']} (P={r['p_formula']:.4f})")
+            logger.info(f"  P(harm) crosses 90% at n={r['n']} (P={r['p_formula']:.4f})")
             break
 
     return {
@@ -151,7 +153,7 @@ def main():
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with open(out_path, "w") as f:
             json.dump(results, f, indent=2)
-        print(f"\nResults saved to {out_path}")
+        logger.info(f"Results saved to {out_path}")
 
 
 if __name__ == "__main__":

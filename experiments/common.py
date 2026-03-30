@@ -108,12 +108,24 @@ def compute_pass_at_1(results: list[TaskResult], fleet_size: int) -> float:
     return sum(1 for r in relevant if r.correct) / len(relevant)
 
 
-def compute_token_overhead(results: list[TaskResult], n1: int = 1, n2: int = 2) -> float:
+def compute_token_overhead(
+    results: list[TaskResult],
+    n1: int = 1,
+    n2: int = 2,
+    context_window: int = 128_000,
+) -> float:
     """Compute per-link coordination overhead c from experimental data.
 
     c = [mean_tokens(n=2) − 2 · mean_tokens(n=1)] / 2
 
     This follows the measurement protocol in Section 5, Rule 1.
+
+    Parameters
+    ----------
+    context_window : int
+        Model context window size used to normalise raw token counts
+        to the [0, 1] scale.  Defaults to 128 000 (GPT-4o-mini).
+        Adjust for models with a different context length.
     """
     tok_n1 = [r.total_tokens for r in results if r.fleet_size == n1]
     tok_n2 = [r.total_tokens for r in results if r.fleet_size == n2]
@@ -124,10 +136,9 @@ def compute_token_overhead(results: list[TaskResult], n1: int = 1, n2: int = 2) 
     mean_n1 = sum(tok_n1) / len(tok_n1)
     mean_n2 = sum(tok_n2) / len(tok_n2)
 
-    # Normalize to [0, 1] scale relative to context window
-    # Using 128K context window as reference
+    # Normalize to [0, 1] scale relative to model context window
     c_tokens = (mean_n2 - 2 * mean_n1) / 2
-    c_normalized = c_tokens / 128_000
+    c_normalized = c_tokens / context_window
     return max(0.0, c_normalized)
 
 
