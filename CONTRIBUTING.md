@@ -37,7 +37,7 @@ Open an issue on GitHub with:
 ## Development Setup
 
 ```bash
-git clone https://github.com/<your-username>/acb-experiments.git
+git clone https://github.com/Benjamin-Koudlanski/acb-experiments.git
 cd acb-experiments
 pip install numpy scipy pandas matplotlib seaborn pyyaml httpx python-dotenv pytest
 PYTHONPATH=. pytest tests/ -v

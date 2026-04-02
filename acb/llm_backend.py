@@ -1,6 +1,7 @@
+# pyright: ignore[reportMissingTypeArgument]
+# pyright: ignore[reportUndefinedVariable]
 """
 Unified LLM backend wrapper.
-
 Supports OpenAI API, local Ollama, and vLLM servers through a single
 async interface. Backend is selected based on environment variables.
 """
@@ -24,7 +25,6 @@ BackendType = Literal["openai", "ollama", "vllm"]
 @dataclass
 class LLMResponse:
     """Response from an LLM call."""
-
     text: str
     tokens_prompt: int
     tokens_completion: int
@@ -36,21 +36,7 @@ class LLMResponse:
 
 
 class LLMBackend:
-    """Unified async LLM client.
-
-    Automatically detects backend from environment variables:
-      - OPENAI_API_KEY → OpenAI
-      - LOCAL_MODEL_URL → Ollama
-      - VLLM_URL → vLLM
-
-    Usage
-    -----
-    ```python
-    llm = LLMBackend()
-    resp = await llm.generate("What is 2+2?")
-    print(resp.text, resp.total_tokens)
-    ```
-    """
+    """Unified async LLM client with hardened expert prompts."""
 
     def __init__(
         self,
@@ -58,13 +44,13 @@ class LLMBackend:
         model: str | None = None,
         max_concurrent: int | None = None,
         temperature: float = 0.0,
-        max_tokens: int = 1024,
+        max_tokens: int = 2048,
     ):
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self._client = httpx.AsyncClient(timeout=120.0)
+        # Timeout à 180s pour permettre le raisonnement Chain-of-Thought
+        self._client = httpx.AsyncClient(timeout=180.0)
 
-        # Auto-detect backend
         if backend:
             self.backend = backend
         elif os.getenv("OPENAI_API_KEY"):
@@ -79,7 +65,6 @@ class LLMBackend:
                 "or LOCAL_MODEL_URL in your .env file."
             )
 
-        # Model name
         if model:
             self.model = model
         elif self.backend == "openai":
@@ -87,9 +72,8 @@ class LLMBackend:
         elif self.backend == "vllm":
             self.model = os.getenv("VLLM_MODEL", "Qwen/Qwen2.5-72B-Instruct")
         elif self.backend == "ollama":
-            self.model = os.getenv("LOCAL_MODEL_NAME", "llama3:70b")
+            self.model = os.getenv("LOCAL_MODEL_NAME", "llama3.1:8b")
 
-        # Base URL
         if self.backend == "openai":
             self.base_url = "https://api.openai.com/v1"
             self.api_key = os.getenv("OPENAI_API_KEY", "")
@@ -100,11 +84,9 @@ class LLMBackend:
             self.base_url = os.getenv("LOCAL_MODEL_URL", "http://localhost:11434")
             self.api_key = ""
 
-        # Rate limiting
         max_conc = max_concurrent or int(os.getenv("MAX_CONCURRENT", "5"))
         self._semaphore = asyncio.Semaphore(max_conc)
 
-        # Token accounting
         self.total_prompt_tokens = 0
         self.total_completion_tokens = 0
         self.total_calls = 0
@@ -112,27 +94,10 @@ class LLMBackend:
     async def generate(
         self,
         prompt: str,
-        system: str = "You are a helpful assistant.",
+        system: str = "You are a world-class expert in computer science and mathematics. You are rigorous, analytical, and provide bug-free, optimized solutions. You always double-check your logic step-by-step before providing a final answer.",
         agent_id: str = "",
         temperature: float | None = None,
     ) -> LLMResponse:
-        """Generate a completion.
-
-        Parameters
-        ----------
-        prompt : str
-            User message.
-        system : str
-            System message.
-        agent_id : str
-            Optional agent identifier for logging.
-        temperature : float, optional
-            Override instance temperature.
-
-        Returns
-        -------
-        LLMResponse
-        """
         temp = temperature if temperature is not None else self.temperature
 
         async with self._semaphore:
@@ -144,7 +109,6 @@ class LLMBackend:
     async def _call_openai_compatible(
         self, prompt: str, system: str, temperature: float
     ) -> LLMResponse:
-        """Call OpenAI or vLLM (both use the same API format)."""
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}",
@@ -177,15 +141,12 @@ class LLMBackend:
             latency_ms=latency,
         )
 
-        self.total_prompt_tokens += result.tokens_prompt
-        self.total_completion_tokens += result.tokens_completion
-        self.total_calls += 1
+        self._update_stats(result)
         return result
 
     async def _call_ollama(
         self, prompt: str, system: str, temperature: float
     ) -> LLMResponse:
-        """Call local Ollama server."""
         body = {
             "model": self.model,
             "messages": [
@@ -212,16 +173,18 @@ class LLMBackend:
             latency_ms=latency,
         )
 
+        self._update_stats(result)
+        return result
+
+    def _update_stats(self, result: LLMResponse):
         self.total_prompt_tokens += result.tokens_prompt
         self.total_completion_tokens += result.tokens_completion
         self.total_calls += 1
-        return result
 
     async def close(self):
-        """Close the HTTP client."""
         await self._client.aclose()
 
-    def usage_summary(self) -> dict:
+def usage_summary(self) -> dict[str, int]:
         """Return token usage summary."""
         return {
             "total_calls": self.total_calls,
@@ -232,8 +195,6 @@ class LLMBackend:
 
 
 async def make_llm_fn(backend: LLMBackend):
-    """Create a callable (prompt, agent_id) -> (text, tokens) for topologies."""
-
     async def llm_fn(prompt: str, agent_id: str = "") -> tuple[str, int]:
         resp = await backend.generate(prompt, agent_id=agent_id)
         return resp.text, resp.total_tokens

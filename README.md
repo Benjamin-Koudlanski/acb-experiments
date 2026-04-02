@@ -29,7 +29,7 @@ This repository contains:
 ### 1. Install
 
 ```bash
-git clone https://github.com/<your-username>/acb-experiments.git
+git clone https://github.com/Benjamin-Koudlanski/acb-experiments.git
 cd acb-experiments
 pip install -e ".[dev]"
 ```
