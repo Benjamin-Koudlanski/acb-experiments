@@ -1,5 +1,6 @@
 # pyright: ignore[reportMissingTypeArgument]
 # pyright: ignore[reportUndefinedVariable]
+# pyright: ignore[reportUnreachable]
 """
 Unified LLM backend wrapper.
 Supports OpenAI API, local Ollama, and vLLM servers through a single
@@ -177,14 +178,16 @@ class LLMBackend:
         return result
 
     def _update_stats(self, result: LLMResponse):
+        """Update global token and call statistics."""
         self.total_prompt_tokens += result.tokens_prompt
         self.total_completion_tokens += result.tokens_completion
         self.total_calls += 1
 
     async def close(self):
+        """Close the underlying HTTP client."""
         await self._client.aclose()
 
-def usage_summary(self) -> dict[str, int]:
+    def usage_summary(self) -> dict[str, int]:
         """Return token usage summary."""
         return {
             "total_calls": self.total_calls,
@@ -193,8 +196,10 @@ def usage_summary(self) -> dict[str, int]:
             "total_tokens": self.total_prompt_tokens + self.total_completion_tokens,
         }
 
+# --- FIN DE LA CLASSE LLMBackend ---
 
 async def make_llm_fn(backend: LLMBackend):
+    """Factory to create a simple async function for agents to use."""
     async def llm_fn(prompt: str, agent_id: str = "") -> tuple[str, int]:
         resp = await backend.generate(prompt, agent_id=agent_id)
         return resp.text, resp.total_tokens
