@@ -10,6 +10,7 @@ async interface. Backend is selected based on environment variables.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import time
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
+logger = logging.getLogger("acb.llm_backend")
 
 BackendType = Literal["openai", "ollama", "vllm"]
 
@@ -45,12 +47,11 @@ class LLMBackend:
         model: str | None = None,
         max_concurrent: int | None = None,
         temperature: float = 0.0,
-        max_tokens: int = 2048,
+        max_tokens: int = 512,
     ):
         self.temperature = temperature
         self.max_tokens = max_tokens
-        # Timeout à 180s pour permettre le raisonnement Chain-of-Thought
-        self._client = httpx.AsyncClient(timeout=180.0)
+        self._client = httpx.AsyncClient(timeout=120.0)
 
         if backend:
             self.backend = backend
@@ -85,7 +86,7 @@ class LLMBackend:
             self.base_url = os.getenv("LOCAL_MODEL_URL", "http://localhost:11434")
             self.api_key = ""
 
-        max_conc = max_concurrent or int(os.getenv("MAX_CONCURRENT", "5"))
+        max_conc = 1
         self._semaphore = asyncio.Semaphore(max_conc)
 
         self.total_prompt_tokens = 0
@@ -147,7 +148,7 @@ class LLMBackend:
 
     async def _call_ollama(
         self, prompt: str, system: str, temperature: float
-    ) -> LLMResponse:
+    ) -> LLMResponse:  # pyright: ignore[reportReturnType]
         body = {
             "model": self.model,
             "messages": [
@@ -155,27 +156,51 @@ class LLMBackend:
                 {"role": "user", "content": prompt},
             ],
             "stream": False,
-            "options": {"temperature": temperature},
+            "options": {
+                "temperature": temperature,
+                "num_predict": self.max_tokens,
+            },
         }
 
-        t0 = time.monotonic()
-        resp = await self._client.post(
-            f"{self.base_url}/api/chat",
-            json=body,
-        )
-        latency = (time.monotonic() - t0) * 1000
-        resp.raise_for_status()
-        data = resp.json()
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                t0 = time.monotonic()
+                resp = await self._client.post(
+                    f"{self.base_url}/api/chat",
+                    json=body,
+                    timeout=120.0,
+                )
+                latency = (time.monotonic() - t0) * 1000
+                resp.raise_for_status()
+                data = resp.json()
 
-        result = LLMResponse(
-            text=data["message"]["content"],
-            tokens_prompt=data.get("prompt_eval_count", 0),
-            tokens_completion=data.get("eval_count", 0),
-            latency_ms=latency,
-        )
+                result = LLMResponse(
+                    text=data["message"]["content"],
+                    tokens_prompt=data.get("prompt_eval_count", 0),
+                    tokens_completion=data.get("eval_count", 0),
+                    latency_ms=latency,
+                )
+                self._update_stats(result)
+                return result
+            except Exception as error:
+                if attempt == max_retries - 1:
+                    logger.error(
+                        "Ollama request failed for model %s after %s attempts: %s",
+                        self.model,
+                        max_retries,
+                        error,
+                    )
+                    raise
 
-        self._update_stats(result)
-        return result
+                wait_time = (attempt + 1) * 5
+                logger.warning(
+                    "Ollama request failed on attempt %s/%s. Retrying in %ss...",
+                    attempt + 1,
+                    max_retries,
+                    wait_time,
+                )
+                await asyncio.sleep(wait_time)
 
     def _update_stats(self, result: LLMResponse):
         """Update global token and call statistics."""
