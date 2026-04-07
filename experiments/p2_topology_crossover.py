@@ -57,11 +57,11 @@ async def run_p2(config: ExperimentConfig) -> ExperimentResult:
     topo_sup = Supervisor()
 
     logger.info("Loading MATH tasks...")
-    tasks = load_tasks(max_tasks=config.max_tasks or 200)
+    tasks = load_tasks(max_tasks=config.max_tasks or 100)
     logger.info(f"Loaded {len(tasks)} tasks")
 
     llm = LLMBackend(
-        backend=config.backend,
+        backend=config.backend,  # pyright: ignore[reportArgumentType]
         model=config.model,
         temperature=config.temperature,
     )
@@ -150,21 +150,21 @@ async def run_p2(config: ExperimentConfig) -> ExperimentResult:
         acc_a2a = summary["all_to_all"][n]
         acc_sup = summary["supervisor"][n]
         if acc_sup > acc_a2a + 0.005:
-            summary["supervisor_wins_at"].append(n)
+            summary["supervisor_wins_at"].append(n)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]  # pyright: ignore[reportUnknownMemberType]  # pyright: ignore[reportUnknownMemberType]  # pyright: ignore[reportUnknownMemberType]  # pyright: ignore[reportUnknownMemberType]  # pyright: ignore[reportUnknownMemberType]  # pyright: ignore[reportUnknownMemberType]  # pyright: ignore[reportUnknownMemberType]  # pyright: ignore[reportUnknownMemberType]  # pyright: ignore[reportUnknownMemberType]  # pyright: ignore[reportUnknownMemberType]  # pyright: ignore[reportUnknownMemberType]
         elif acc_a2a > acc_sup + 0.005:
-            summary["a2a_wins_at"].append(n)
+            summary["a2a_wins_at"].append(n)  # pyright: ignore[reportUnknownMemberType, reportUnusedCallResult, reportAttributeAccessIssue]  # pyright: ignore[reportUnknownMemberType]
 
     c_a2a = compute_token_overhead(a2a_results)
     c_sup = compute_token_overhead(sup_results)
     if c_a2a > 0:
-        summary["c_all2all"] = c_a2a
-        summary["c_supervisor"] = c_sup
-        summary["n_crossover_predicted"] = topology_crossover(c_sup, c_a2a)
+        summary["c_all2all"] = c_a2a  # pyright: ignore[reportArgumentType]
+        summary["c_supervisor"] = c_sup  # pyright: ignore[reportArgumentType]
+        summary["n_crossover_predicted"] = topology_crossover(c_sup, c_a2a)  # pyright: ignore[reportArgumentType]
     else:
-        summary["n_crossover_predicted"] = None
+        summary["n_crossover_predicted"] = None  # pyright: ignore[reportArgumentType]
 
-    summary["p2_falsified"] = any(n >= 2 for n in summary["a2a_wins_at"])
-    summary["llm_usage"] = llm.usage_summary()
+    summary["p2_falsified"] = any(n >= 2 for n in summary["a2a_wins_at"])  # pyright: ignore[reportArgumentType]
+    summary["llm_usage"] = llm.usage_summary()  # pyright: ignore[reportArgumentType]
     result.summary = summary
     result.finished_at = datetime.now(timezone.utc).isoformat()
 

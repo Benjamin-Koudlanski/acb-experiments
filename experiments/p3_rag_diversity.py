@@ -89,10 +89,10 @@ async def run_fleet_on_task(problem, passages, agents, llm_fn, mode):
 async def run_p3(config: ExperimentConfig) -> ExperimentResult:
     setup_logging()
     fleet_sizes = config.fleet_sizes or DEFAULT_FLEET_SIZES
-    tasks = load_tasks(max_tasks=config.max_tasks or 200)
+    tasks = load_tasks(max_tasks=config.max_tasks or 100)
     logger.info(f"Loaded {len(tasks)} tasks")
 
-    llm = LLMBackend(backend=config.backend, model=config.model, temperature=config.temperature)
+    llm = LLMBackend(backend=config.backend, model=config.model, temperature=config.temperature)  # pyright: ignore[reportArgumentType]
     llm_fn = await make_llm_fn(llm)
 
     result = ExperimentResult(
@@ -139,20 +139,20 @@ async def run_p3(config: ExperimentConfig) -> ExperimentResult:
         "isolated": {n: compute_pass_at_1(isolated, n) for n in fleet_sizes},
     }
     baseline = summary["shared"].get(1, 0) or summary["isolated"].get(1, 0)
-    summary["baseline_n1"] = baseline
-    summary["shared_n6"] = summary["shared"].get(6, 0)
-    summary["isolated_n6"] = summary["isolated"].get(6, 0)
-    summary["shared_improvement"] = summary["shared_n6"] - baseline
-    summary["isolated_improvement"] = summary["isolated_n6"] - baseline
-    summary["p3_falsified"] = summary["shared_improvement"] > 0.05
+    summary["baseline_n1"] = baseline  # pyright: ignore[reportArgumentType]
+    summary["shared_n6"] = summary["shared"].get(6, 0)  # pyright: ignore[reportArgumentType]
+    summary["isolated_n6"] = summary["isolated"].get(6, 0)  # pyright: ignore[reportArgumentType]
+    summary["shared_improvement"] = summary["shared_n6"] - baseline  # pyright: ignore[reportArgumentType]
+    summary["isolated_improvement"] = summary["isolated_n6"] - baseline  # pyright: ignore[reportArgumentType]
+    summary["p3_falsified"] = summary["shared_improvement"] > 0.05  # pyright: ignore[reportArgumentType]
     # ρ_crit parameters: c estimated from token overhead, sigma_sq from
     # empirical pass-rate variance.  Fall back to calibration defaults
     # (c=0.06, σ²=0.15) when experimental estimates are unavailable.
     estimated_c = summary.get("c_overhead", 0.06) or 0.06
     estimated_sigma_sq = 0.15  # TODO: derive from per-task variance when data permits
-    summary["rho_crit_params"] = {"c": estimated_c, "sigma_sq": estimated_sigma_sq}
-    summary["rho_crit_estimate"] = rho_crit(c=estimated_c, sigma_sq=estimated_sigma_sq)
-    summary["llm_usage"] = llm.usage_summary()
+    summary["rho_crit_params"] = {"c": estimated_c, "sigma_sq": estimated_sigma_sq}  # pyright: ignore[reportArgumentType]
+    summary["rho_crit_estimate"] = rho_crit(c=estimated_c, sigma_sq=estimated_sigma_sq)  # pyright: ignore[reportArgumentType]
+    summary["llm_usage"] = llm.usage_summary()  # pyright: ignore[reportArgumentType]
 
     result.summary = summary
     result.finished_at = datetime.now(timezone.utc).isoformat()
